@@ -13,6 +13,8 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
+import co.dspace.metadata.commons.CommonConstants;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
@@ -67,12 +69,12 @@ public class LoadFile extends HttpServlet {
 
                 if (fileItem != null) {
                     if (fileItem.getSize() > 0) {
-                        String folder = "C:/Archivos/";
+                        String folder = CommonConstants.UPLOAD_DIRECTORY;
                         File folders = new File(folder);
                         if (!folders.exists()) {
                             folders.mkdirs();
                         }
-                        fileName = "C:/Archivos/" + archivo;
+                        fileName = CommonConstants.UPLOAD_DIRECTORY + archivo;
                         File saveTo = new File(fileName);
                         fileItem.write(saveTo);
                         FileInputStream fis = new FileInputStream(saveTo);
@@ -88,7 +90,7 @@ public class LoadFile extends HttpServlet {
                         dis.close();
                         folders.setReadOnly();
 
-                        File f = new File("C:/Archivos/metadatos.txt");
+                        File f = new File(CommonConstants.UPLOAD_DIRECTORY + "metadatos.txt");
                         FileOutputStream fos = new FileOutputStream(f);
                         DataOutputStream dos = new DataOutputStream(fos);
                         dos.writeBytes(cadenaCompleta);

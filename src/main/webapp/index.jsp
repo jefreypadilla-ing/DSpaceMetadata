@@ -13,7 +13,7 @@
     </head>
 
     <body> 
-        <div>
+        <div class="container">
             <h3> Choose File to Upload in Server </h3>
             <form action="LoadFile" method="post" enctype="multipart/form-data">
                 <input id="file" name="file" type="file" class="file">
