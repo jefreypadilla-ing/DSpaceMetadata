@@ -3,7 +3,6 @@ package co.dspace.metadata;
 import java.util.List;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -14,14 +13,21 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
-import co.dspace.metadata.commons.CommonConstants;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.Iterator;
+
 /**
  * Servlet implementation class LoadFile
  */
 @WebServlet("/LoadFile")
 public class LoadFile extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-    
+
+    private static final long serialVersionUID = 1L;
+
     /**
      * @see HttpServlet#HttpServlet()
      */
@@ -30,53 +36,110 @@ public class LoadFile extends HttpServlet {
         // TODO Auto-generated constructor stub
     }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		response.getWriter().append("Served at: ").append(request.getContextPath());
-		
-		//process only if its multipart content
-        if(ServletFileUpload.isMultipartContent(request)){
+    /**
+     * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse
+     * response)
+     */
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // TODO Auto-generated method stub
+        //response.getWriter().append("Served at: ").append(request.getContextPath());
+
+        String archivo = "", fileName, linea, cadenaCompleta = "";
+
+        if (ServletFileUpload.isMultipartContent(request)) {
+
             try {
-                List<FileItem> multiparts = new ServletFileUpload(
-                                         new DiskFileItemFactory()).parseRequest(request);
-              
-                for(FileItem item : multiparts){
-                    if(!item.isFormField()){
-                        String name = new File(item.getName()).getName();
-                        item.write( new File(CommonConstants.UPLOAD_DIRECTORY + File.separator + name));
-                        
-                        Files.lines(new File(CommonConstants.UPLOAD_DIRECTORY + File.separator + name).toPath())
-	                        .map(s -> s.trim())
-	                     .filter(s -> !s.isEmpty())
-	                     .forEach(s -> System.out.println(s + "||"));
-                    
+
+                ServletFileUpload servletFileUpload = new ServletFileUpload(new DiskFileItemFactory());
+                List fileItemsList = servletFileUpload.parseRequest(request);
+                org.apache.commons.fileupload.FileItem fileItem = null;
+                Iterator it = fileItemsList.iterator();
+                while (it.hasNext()) {
+                    FileItem fileItemTemp = (FileItem) it.next();
+                    if (!fileItemTemp.isFormField()) {
+                        if (fileItemTemp.getContentType().equals("text/plain")) {
+                            archivo = fileItemTemp.getName();
+                            fileItem = fileItemTemp;
+                            break;
+                        }
                     }
                 }
-           
-               //File uploaded successfully
-               request.setAttribute("message", "File Uploaded Successfully");
-            } catch (Exception ex) {
-               request.setAttribute("message", "File Upload Failed due to " + ex);
-            }          
-         
-        }else{
-            request.setAttribute("message",
-                                 "Sorry this Servlet only handles file upload request");
-        }
-    
-        request.getRequestDispatcher("/result.jsp").forward(request, response);
-		
-	}
 
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
-	}
+                if (fileItem != null) {
+                    if (fileItem.getSize() > 0) {
+                        String folder = "C:/Archivos/";
+                        File folders = new File(folder);
+                        if (!folders.exists()) {
+                            folders.mkdirs();
+                        }
+                        fileName = "C:/Archivos/" + archivo;
+                        File saveTo = new File(fileName);
+                        fileItem.write(saveTo);
+                        FileInputStream fis = new FileInputStream(saveTo);
+                        DataInputStream dis = new DataInputStream(fis);
+
+                        while ((linea = dis.readLine()) != null) {
+                            cadenaCompleta += linea + "||";
+                        }
+
+                        cadenaCompleta = cadenaCompleta.substring(0, cadenaCompleta.length() - 2);
+
+                        fis.close();
+                        dis.close();
+                        folders.setReadOnly();
+
+                        File f = new File("C:/Archivos/metadatos.txt");
+                        FileOutputStream fos = new FileOutputStream(f);
+                        DataOutputStream dos = new DataOutputStream(fos);
+                        dos.writeBytes(cadenaCompleta);
+                        fos.close();
+                        dos.close();
+                        
+                        request.setAttribute("message", "File Uploaded Successfully");
+                        request.getRequestDispatcher("/result.jsp").forward(request, response);
+
+                        response.setContentType("application/txt");
+                        response.setContentLength((int) f.length());
+
+                        response.setHeader("Content-Disposition", "attachment; filename=\"" + f.getName() + "\"");
+                        response.setHeader("cache-control", "no-cache");
+                        byte baz[] = new byte[(int) f.length()];
+                        FileInputStream in = new FileInputStream(f);
+                        OutputStream os = response.getOutputStream();
+
+                        in.read(baz);
+                        os.write(baz);
+                        os.flush();
+
+                        in.close();
+                        os.close();
+                        
+
+                    }
+                }
+
+                
+
+            } catch (Exception e) {
+                request.setAttribute("message", "File Upload Failed due to " + e);
+            }
+
+        } else {
+            request.setAttribute("message",
+                    "Sorry this Servlet only handles file upload request");
+        }
+
+        
+
+    }
+
+    /**
+     * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse
+     * response)
+     */
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // TODO Auto-generated method stub
+        doGet(request, response);
+    }
 
 }
